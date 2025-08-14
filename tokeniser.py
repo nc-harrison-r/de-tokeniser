@@ -1,6 +1,84 @@
 class Tokeniser:
-    def tokenise(self, text: str):
+    
+    END_OF_WORD_SYMBOL = "</w>"
+    
+    def tokenise(self, text):
+        # Lowercase the text
+        text = text.lower()
+
+        # Define punctuation characters to remove
+        punctuation_chars = '.,!?;:"()'
+
+        # Remove punctuation
+        cleaned_text = ""
+        for char in text:
+            if char not in punctuation_chars:
+                cleaned_text += char
+
+        # Split on whitespace and return tokens
+        return cleaned_text.split()
+    
+    def count_tokens(self, tokens):
+        # Count how many times each token appears
+        counts = {}
+        for token in tokens:
+            if token in counts:
+                counts[token] += 1
+            else:
+                counts[token] = 1
+        return counts
+    
+    def sort_vocab(self, token_counts):
+        # Convert the dictionary into a list of (token, count) pairs
+        items = list(token_counts.items())
+        sorted_items = []
+
+        # Loop through the items 
+        for _ in range(len(items)):
+            # Find the highest-count item remaining
+            highest = items[0]
+            for token, count in items:
+                if count > highest[1]:
+                    highest = (token, count)
+
+            # Append highest to the sorted list
+            sorted_items.append(highest)
+
+            # Remove it from the remaining list
+            items.remove(highest)
+
+        return sorted_items
+    
+    def split_into_subwords(self, tokens):
+        subwords = []
+        for token in tokens:
+            chars = list(token)
+            chars.append(self.END_OF_WORD_SYMBOL)
+            subwords.append(chars)
+        return subwords
+    
+    def count_symbol_pairs(self, subword_tokens):
         """
-        Splits the input text into a list of word tokens separated by whitespace.
+        Count frequencies of adjacent symbol pairs across all subword tokens.
+        Each subword token is a list like ["t", "h", "e", "</w>"].
+        Returns a dict mapping (sym1, sym2) -> count.
         """
-        return text.split()
+        pair_counts = {}
+
+        # Go through each token (list of symbols)
+        for symbols in subword_tokens:
+            # Create adjacent pairs: (s0,s1), (s1,s2), ...
+            
+            for a, b in zip(symbols, symbols[1:]):
+                pair = (a, b)
+                if pair in pair_counts:
+                    pair_counts[pair] += 1
+                else:
+                    pair_counts[pair] = 1
+
+        return pair_counts
+    
+t = Tokeniser()
+tokens = t.tokenise("cat car caravan")
+sub = t.split_into_subwords(tokens)
+print (t.count_symbol_pairs(sub))
