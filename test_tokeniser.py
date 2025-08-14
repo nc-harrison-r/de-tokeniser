@@ -195,3 +195,78 @@ def test_count_symbol_pairs_two_tokens_accumulate_counts():
                 ('a', 'n'): 1, 
                 ('n', '</w>'): 1}
     assert result == expected
+
+# --- Test merge_most_frequent_pair --- #
+
+def test_merge_most_frequent_pair_no_pairs_returns_same():
+    t = Tokeniser()
+    sub = [["c", "a", "t", "</w>"]]
+    merged = t.merge_most_frequent_pair(sub, {})  # no pairs to merge
+    assert merged == [["c", "a", "t", "</w>"]]
+
+def test_merge_most_frequent_pair_single_token_single_merge():
+    t = Tokeniser()
+    sub = [["c", "a", "t", "</w>"]]
+    pair_counts = {("c", "a"): 1}
+    merged = t.merge_most_frequent_pair(sub, pair_counts)
+    assert merged == [["ca", "t", "</w>"]]
+
+def test_merge_most_frequent_pair_merges_correctly():
+    t = Tokeniser()
+    sub = [
+        ["t", "h", "e", "</w>"],
+        ["h", "a", "t", "</w>"]
+    ]
+    pair_counts = {
+        ("t", "h"): 1,
+        ("h", "e"): 1,
+        ("e", "</w>"): 1,
+        ("h", "a"): 1,
+        ("a", "t"): 1,
+        ("t", "</w>"): 1
+    }
+    merged = t.merge_most_frequent_pair(sub, pair_counts)
+    assert merged[0] == ["th", "e", "</w>"]
+    assert merged[1] == ["h", "a", "t", "</w>"]
+
+def test_merge_most_frequent_pair_merges_all_occurrences_across_tokens():
+    t = Tokeniser()
+    sub = [
+        ["c", "a", "t", "</w>"],
+        ["c", "a", "r", "</w>"],
+        ["c", "a", "t", "</w>"]
+    ]
+    pair_counts = {
+        ("c", "a"): 3,
+        ("a", "t"): 2,
+        ("t", "</w>"): 2,
+        ("a", "r"): 1,
+        ("r", "</w>"): 1
+    }
+    merged = t.merge_most_frequent_pair(sub, pair_counts)
+    assert merged == [
+        ["ca", "t", "</w>"],
+        ["ca", "r", "</w>"],
+        ["ca", "t", "</w>"]
+    ]
+
+def test_merge_most_frequent_pair_tie_picks_first_in_pair_counts_order():
+    t = Tokeniser()
+    sub = [["a", "b", "c", "</w>"]]
+    # Two pairs have the same highest count (2).
+    # We expect to choose the first inserted key in this dict: ("a","b")
+    pair_counts = {
+        ("a", "b"): 2,
+        ("b", "c"): 2
+    }
+    merged = t.merge_most_frequent_pair(sub, pair_counts)
+    # Should merge ("a","b") into "ab" and leave "c" alone
+    assert merged == [["ab", "c", "</w>"]]
+
+def test_merge_most_frequent_pair_handles_repeated_adjacent_pairs_non_overlapping():
+    t = Tokeniser()
+    sub = [["a", "a", "a", "</w>"]]
+    pair_counts = {("a", "a"): 2}
+    merged = t.merge_most_frequent_pair(sub, pair_counts)
+    # Non-overlapping merges left-to-right: "aa" + "a"
+    assert merged == [["aa", "a", "</w>"]]

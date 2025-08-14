@@ -78,6 +78,46 @@ class Tokeniser:
 
         return pair_counts
     
+    def merge_most_frequent_pair(self, subword_tokens, pair_counts):
+        """
+        Find the most frequent (symbol1, symbol2) pair and merge every
+        non-overlapping occurrence of that pair in each subword token.
+        If multiple pairs tie for most frequent, choose the first one
+        encountered when iterating over pair_counts (insertion order).
+        Returns a NEW list of subword tokens with merges applied.
+        """
+        # If no pairs, nothing to merge
+        if not pair_counts:
+            return [symbols[:] for symbols in subword_tokens]
+
+        # Find the "best" pair: highest count; ties resolved by first seen
+        best_pair = None
+        best_count = -1
+        for pair, count in pair_counts.items():
+            if count > best_count:
+                best_pair = pair
+                best_count = count
+
+        a, b = best_pair  # the two symbols to merge
+
+        merged_tokens = []
+        for symbols in subword_tokens:
+            i = 0
+            merged = []
+            # Scan left-to-right and merge non-overlapping matches
+            while i < len(symbols):
+                # If the next two symbols match the best pair, merge them
+                if i + 1 < len(symbols) and symbols[i] == a and symbols[i + 1] == b:
+                    merged.append(symbols[i] + symbols[i + 1])
+                    i += 2  # skip both since they have been merged
+                else:
+                    merged.append(symbols[i])
+                    i += 1
+            merged_tokens.append(merged)
+
+        return merged_tokens
+    
+
 t = Tokeniser()
 tokens = t.tokenise("cat car caravan")
 sub = t.split_into_subwords(tokens)
